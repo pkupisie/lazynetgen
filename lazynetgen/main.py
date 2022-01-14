@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 vlans_counter = 0
 
 TEMPLATES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates'))
-print(TEMPLATES_DIR)
+INVENTORY_FILE_NAME="inventory.csv"
 
 # We use 10.0.0.0/8 by default and subnets of /24
 class VLAN:
@@ -55,15 +55,24 @@ class Site:
                 self.wan.routing_table.add(Route(routing_entry.dst_network, self.wan.routed_vlans[0].vlan.network[2+n]))
             self.distributions.append(distribution)
 
-    def dump_to_directory(self, directory):
+
+    def dump_to_directory(self, directory) -> None:
         directory = directory if directory else self.name
         # WAN router
         self.wan.dump_to_director(directory)
         # distribution switches with accesses
+        devices : List["Switch"] = []
         for distr in self.distributions:
+            devices.append(distr)
             distr.dump_to_director(directory)
             for access in distr.accesses:
                 access.dump_to_director(directory)
+                devices.append(access)
+        # generate inventory.csv
+        env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
+        template = env.get_template('inventory.csv')
+        with open(os.path.join(directory, INVENTORY_FILE_NAME), "w") as fp:
+            fp.write(template.render(devices=devices))
 
 class Route:
     def __init__(self, dst_network : IPv4Network, next_hop : IPv4Address) -> None:

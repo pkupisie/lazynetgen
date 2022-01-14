@@ -1,0 +1,3 @@
+{% for device in devices -%}
+{{device.name}},{{device.name}},{{device.routed_vlans[0].ip_address}},IOS
+{% endfor -%}
